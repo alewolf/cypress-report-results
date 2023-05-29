@@ -1,0 +1,30 @@
+{
+  "name": "cypress-report-results",
+  "version": "1.0.0",
+  "description": "A Cypress plugin to report the results",
+  "main": "src",
+  "scripts": {
+    "test": "cypress run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alewolf/cypress-report-results.git"
+  },
+  "keywords": [
+    "cypress",
+    "report",
+    "results"
+  ],
+  "author": "Aleksandar Vucenovic",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alewolf/cypress-report-results/issues"
+  },
+  "homepage": "https://github.com/alewolf/cypress-report-results#readme",
+  "dependencies": {
+    "ci-info": "^3.8.0",
+    "common-tags": "^1.8.2",
+    "humanize-duration": "^3.28.0",
+    "nodemailer": "^6.9.2"
+  }
+}
