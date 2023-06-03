@@ -1,6 +1,6 @@
 {
   "name": "cypress-report-results",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A Cypress plugin to report the results",
   "main": "src",
   "scripts": {

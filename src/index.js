@@ -7,6 +7,21 @@ const { stripIndent } = require('common-tags')
 const ci = require('ci-info')
 const humanizeDuration = require('humanize-duration')
 
+// Load a configuration file from crr.config.js if the file exists
+// otherwise use the default configuration
+const loadConfig = () => {
+
+    try {
+        return require(process.cwd() + '/crr.config.js')
+    } catch (e) {
+        return {}
+    }
+}
+
+const config = loadConfig()
+
+console.log("config", config)
+
 const initSmtpTransport = () => {
 
     try {
@@ -190,7 +205,6 @@ function getEmailTo(options) {
     return emailTo
 }
 
-
 function registerCypressReportResults(on, config, options) {
 
     if (!options) {
@@ -262,8 +276,29 @@ function registerCypressReportResults(on, config, options) {
         }
 
         if (totals.failed === 0) {
+
             // successful run
             if (!emailOnSuccess) {
+                return
+            }
+
+            let hasRunToday = false
+
+            if (process.env.LAST_RUN_DATE) {
+
+                // oldDate is a string in ISO 8601 format
+                // const inputDateTime = '2023-06-03T09:55:42Z'
+
+                // get the current date
+                const today = new Date()
+
+                // if inputDateTime is not on the same date as today, then set result to false, otherwise true
+                hasRunToday = process.env.LAST_RUN_DATE.substring(0, 10) === today.toISOString().substring(0, 10)
+            }
+
+            // If hasRunToday is true, then don't send email
+            if (hasRunToday) {
+                console.log('Cypress email results: already sent 100% success email today')
                 return
             }
         }
@@ -308,12 +343,7 @@ function registerCypressReportResults(on, config, options) {
 
         let text = textStart + '\n\n' + dashboard + '\n\n' + testResults
 
-        // console.log('e2e.js')
-        if (process.env.LAST_RUN_DATE) {
-           text += '\n\n\n' + `LAST_RUN_DATE: ${process.env.LAST_RUN_DATE}`
-        } else {
-            text += '\n\n\n' + `LAST_RUN_DATE: undefined`
-        }
+        
 
         if (ci.isCI && ci.name) {
             text +=
