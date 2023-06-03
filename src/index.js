@@ -232,6 +232,13 @@ function registerCypressReportResults(on, config, options) {
 
     on('after:run', async (afterRun) => {
 
+        console.log('e2e.js')
+        if (process.env.LAST_RUN_DATE) {
+            console.log('LAST_RUN_DATE: ' + process.env.LAST_RUN_DATE)
+        } else {
+            console.log('LAST_RUN_DATE: undefined')
+        }
+
         // console.log("afterRun", JSON.stringify(afterRun, null, 2))
 
         // Add the totals to the results
