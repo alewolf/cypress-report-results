@@ -7,20 +7,111 @@ const { stripIndent } = require('common-tags')
 const ci = require('ci-info')
 const humanizeDuration = require('humanize-duration')
 
-// Load a configuration file from crr.config.js if the file exists
-// otherwise use the default configuration
-const loadConfig = () => {
+const defaultOptions = {
+    packageName: "",
+    emailFrom: "",
+    emailTo: "",
+    emailToOnFail: "",
+    emailOnSuccess: true,
+    dry: false,
+    transport: null,
+}
 
+let options
+
+const getOptionsFromOptionsFile = () => {
     try {
-        return require(process.cwd() + '/crr.config.js')
+        return require(process.cwd() + '/cypress-report-results.config.js');
     } catch (e) {
-        return {}
+        throw new Error('Could not load config file')
     }
 }
 
-const config = loadConfig()
+// Load a configuration file from cypress-report-results.config.js if the file exists
+// otherwise use the default configuration
+const loadOptions = () => {
 
-console.log("config", config)
+    const customOptions = getOptionsFromOptionsFile();
+
+    options = {
+        ...defaultOptions,
+        ...customOptions
+    };
+
+    // Make options.emailTo an array if it is a string
+    if (typeof options.emailTo === 'string') {
+        options.emailTo = [options.emailTo]
+    }
+
+    // Make options.emailToOnFail an array if it is a string
+    if (typeof options.emailToOnFail === 'string') {
+        options.emailToOnFail = [options.emailToOnFail]
+    }
+
+    validateOptions();
+}
+
+function validateOptions() {
+
+    validateEmails(options.emailFrom, true)
+    validateEmails(options.emailTo)
+    validateEmails(options.emailToOnFail, false, true)
+
+    // packageName must be string
+    if (typeof options.packageName !== 'string') {
+        throw new Error('Invalid packageName option: not a string')
+    }
+
+    // emailOnSuccess must be boolean
+    if (typeof options.emailOnSuccess !== 'boolean') {
+        throw new Error('Invalid emailOnSuccess option: not a boolean')
+    }
+
+    // dry must be boolean
+    if (typeof options.dry !== 'boolean') {
+        throw new Error('Invalid dry option: not a boolean')
+    }
+}
+
+function validateEmails(emails, mustBeString = false, canBeEmpty = false) {
+
+    // If options.emailTo is empty and canBeEmpty is true, return
+    if (canBeEmpty && emails === "") {
+        return
+    }
+
+    // If mustBeString is true, check if emails is a string. If not, throw error
+    if (mustBeString) {
+        if (typeof emails !== 'string') {
+            throw new Error('Invalid email option: not a string')
+        }
+    }
+
+    // If options.emailTo is a string, check if it is a valid email address. If yes, return
+    if (typeof emails === 'string') {
+        validateEmail(emails)
+        return
+    }
+
+    // If emails is an array, check if all elements are valid email addresses. If yes, return
+    if (Array.isArray(emails)) {
+
+        if (emails.length === 0) {
+            throw new Error('Missing required option emailTo')
+        }
+
+        // Remove duplicates
+        emails = [...new Set(emails)]
+
+        emails.forEach(email => {
+            validateEmail(email)
+        })
+
+        return
+    }
+
+    throw new Error('Invalid emailTo option: not a string or array')
+}
 
 const initSmtpTransport = () => {
 
@@ -66,8 +157,8 @@ function getProjectName() {
 
     try {
 
-        if (process.env.PACKAGE_NAME) {
-            return process.env.PACKAGE_NAME
+        if (options.packageName) {
+            return options.packageName
         }
 
         const pkg = require(process.cwd() + '/package.json')
@@ -103,40 +194,7 @@ function isEmail(email) {
     return regex.test(email)
 }
 
-function getEmailFrom(options) {
-
-    if (options.emailFrom) {
-
-        // If is not string throw error
-        if (typeof options.emailFrom !== 'string') {
-            throw new Error('Invalid emailFrom option: not a string')
-        }
-
-        // If is not valid email address throw error
-        if (!isEmail(options.emailFrom)) {
-            throw new Error('Invalid emailFrom option: not a valid email address')
-        }
-
-        return options.emailFrom
-    }
-
-    if (!process.env.EMAIL_FROM) {
-        throw new Error('Missing required option emailFrom or environment variable: EMAIL_FROM')
-    }
-
-    // process.env.EMAIL_FROM must be a string and must be a valid email address
-    if (typeof process.env.EMAIL_FROM !== 'string') {
-        throw new Error('Invalid EMAIL_FROM environment variable: not a string')
-    }
-
-    if (!isEmail(process.env.EMAIL_FROM)) {
-        throw new Error('Invalid EMAIL_FROM environment variable: not a valid email address')
-    }
-
-    return process.env.EMAIL_FROM
-}
-
-const initEmailSender = (options) => {
+const initEmailSender = () => {
 
     const emailSender = options.transport || initSmtpTransport()
 
@@ -181,50 +239,22 @@ function validateAndReturnEmail(emailInput) {
     return emailTo
 }
 
-function getEmailTo(options) {
+function validateEmail(email) {
 
-    let emailTo = []
-
-    // Check if options.emailTo is defined and add the email addresses to emailTo array
-    if (options.emailTo) {
-        emailTo.push(...validateAndReturnEmail(options.emailTo))
+    if (!isEmail(email)) {
+        throw new Error(`Not a valid email address: "${email}"`)
     }
-
-    // Check if process.env.EMAIL_TO is defined and add the email addresses to emailTo array
-    if (process.env.EMAIL_TO) {
-        emailTo.push(...validateAndReturnEmail(process.env.EMAIL_TO.split(',')))
-    }
-
-    if (emailTo.length === 0) {
-        throw new Error('Missing required option emailTo or environment variable: EMAIL_TO')
-    }
-
-    // Remove duplicates
-    emailTo = [...new Set(emailTo)]
-
-    return emailTo
 }
 
-function registerCypressReportResults(on, config, options) {
+function registerCypressReportResults(on, config) {
 
-    if (!options) {
-        throw new Error('options is required')
-    }
-    
+    loadOptions()
+
     if (!on) {
         throw new Error('Missing required option: on')
     }
 
-    const emailFrom = getEmailFrom(options)
-
-    let emailTo = getEmailTo(options)
-
-    const emailSender = initEmailSender(options)
-
-    const emailOnSuccess =
-        'emailOnSuccess' in options ? options.emailOnSuccess : true
-
-    const dryRun = 'dry' in options ? options.dry : false
+    const emailSender = initEmailSender()
 
     // keeps all test results by spec
     let allResults
@@ -270,19 +300,20 @@ function registerCypressReportResults(on, config, options) {
 
         const runStatus = totals.failed > 0 ? 'FAILED' : 'OK'
 
-        // If totals.failed > 0 add emails from process.env.EMAIL_ON_FAILURE to emailTo array
-        if (totals.failed > 0 && process.env.EMAIL_TO_ON_FAILURE) {
-            emailTo.push(...validateAndReturnEmail(process.env.EMAIL_TO_ON_FAILURE.split(',')))
+        // If totals.failed > 0 add emails from options.emailToOnFail to emailTo array
+        if (totals.failed > 0 && options.emailToOnFail) {
+            options.emailTo.push(...options.emailToOnFail)
         }
 
+        let hasRunToday = false
+        
         if (totals.failed === 0) {
 
             // successful run
-            if (!emailOnSuccess) {
+            if (!options.emailOnSuccess) {   
                 return
             }
 
-            let hasRunToday = false
 
             if (process.env.LAST_RUN_DATE) {
 
@@ -305,7 +336,7 @@ function registerCypressReportResults(on, config, options) {
 
         console.log(
             'Cypress email results: sending results to %d email users',
-            emailTo.length,
+            options.emailTo.length,
         )
 
         const n = Object.keys(allResults).length
@@ -343,7 +374,15 @@ function registerCypressReportResults(on, config, options) {
 
         let text = textStart + '\n\n' + dashboard + '\n\n' + testResults
 
-        
+        // Add process.env.LAST_RUN_DATE to text
+        if (process.env.LAST_RUN_DATE) {
+            text += '\n\n\n' + `Last run date: ${process.env.LAST_RUN_DATE}`
+        }
+
+        // Add hasRunToday to text
+        if (hasRunToday) {
+            text += '\n\n\n' + `Has run today: ${hasRunToday}`
+        }
 
         if (ci.isCI && ci.name) {
             text +=
@@ -351,14 +390,14 @@ function registerCypressReportResults(on, config, options) {
         }
 
         const emailOptions = {
-            to: emailTo,
-            from: emailFrom,
+            from: options.emailFrom,
+            to: options.emailTo,
             subject,
             text,
         }
 
         // console.log(emailOptions.text)
-        if (dryRun) {
+        if (options.dry) {
             console.log('Cypress email results: dry run, not sending email')
             console.log('')
             console.log(subject)
