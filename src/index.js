@@ -319,7 +319,14 @@ function registerCypressReportResults(on, config) {
                 return
             }
 
+            // Find out what weekday it is. If it Saturday or Sunday, then don't send email
+            const day = new Date().getDay()
 
+            if (day === 0 || day === 6) {
+                console.log('Cypress email results: not sending 100% success email on weekend')
+                return
+            }
+    
             if (process.env.LAST_RUN_DATE) {
 
                 // oldDate is a string in ISO 8601 format
@@ -394,8 +401,6 @@ function registerCypressReportResults(on, config) {
 
             // add process.env.LAST_RUN_DATE date to string
             text += '\n\n\n' + `process.env.LAST_RUN_DATE: ${customTrim(process.env.LAST_RUN_DATE).substring(0, 10)}`
-
-
         }
 
         if (ci.isCI && ci.name) {
