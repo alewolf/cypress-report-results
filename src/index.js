@@ -305,39 +305,39 @@ function registerCypressReportResults(on, config) {
 
         if (totals.failed === 0) {
 
-            // // successful run
-            // if (!options.email.onSuccess) {
-            //     return
-            // }
+            // successful run
+            if (!options.email.onSuccess) {
+                return
+            }
 
-            // // Find out what weekday it is. If it Saturday or Sunday, then don't send email
-            // if (process.env.NODE_ENV && process.env.NODE_ENV !== 'development') {
+            // Find out what weekday it is. If it Saturday or Sunday, then don't send email
+            if (process.env.NODE_ENV && process.env.NODE_ENV !== 'development') {
 
-            //     const day = new Date().getDay()
+                const day = new Date().getDay()
 
-            //     if (day === 0 || day === 6) {
-            //         console.log('Cypress email results: not sending 100% success email on weekend')
-            //         return
-            //     }
-            // }
+                if (day === 0 || day === 6) {
+                    console.log('Cypress email results: not sending 100% success email on weekend')
+                    return
+                }
+            }
 
-            // if (process.env.LAST_RUN_DATE) {
+            if (process.env.LAST_RUN_DATE) {
 
-            //     // oldDate is a string in ISO 8601 format
-            //     // const inputDateTime = '2023-06-03T09:55:42Z'
+                // oldDate is a string in ISO 8601 format
+                // const inputDateTime = '2023-06-03T09:55:42Z'
 
-            //     // get the current date
-            //     const today = new Date()
+                // get the current date
+                const today = new Date()
 
-            //     // if inputDateTime is not on the same date as today, then set result to false, otherwise true
-            //     hasRunToday = customTrim(process.env.LAST_RUN_DATE).substring(0, 10) === today.toISOString().substring(0, 10)
-            // }
+                // if inputDateTime is not on the same date as today, then set result to false, otherwise true
+                hasRunToday = customTrim(process.env.LAST_RUN_DATE).substring(0, 10) === today.toISOString().substring(0, 10)
+            }
 
-            // // If hasRunToday is true, then don't send email
-            // if (hasRunToday) {
-            //     console.log('Cypress email results: already sent 100% success email today')
-            //     return
-            // }
+            // If hasRunToday is true, then don't send email
+            if (hasRunToday) {
+                console.log('Cypress email results: already sent 100% success email today')
+                return
+            }
         }
 
         console.log(
