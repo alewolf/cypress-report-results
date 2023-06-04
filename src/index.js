@@ -9,12 +9,14 @@ const humanizeDuration = require('humanize-duration')
 
 const defaultOptions = {
     packageName: "",
-    emailFrom: "",
-    emailTo: "",
-    emailToOnFail: "",
-    emailOnSuccess: true,
     dry: false,
-    transport: null,
+    email: {
+        from: "",
+        to: "",
+        toOnFail: "",
+        onSuccess: true,
+        transport: null,
+    },
 }
 
 let options
@@ -33,38 +35,58 @@ const loadOptions = () => {
 
     const customOptions = getOptionsFromOptionsFile();
 
-    options = {
-        ...defaultOptions,
-        ...customOptions
-    };
+    options = mergeOptions(defaultOptions, customOptions)
 
-    // Make options.emailTo an array if it is a string
-    if (typeof options.emailTo === 'string') {
-        options.emailTo = [options.emailTo]
+    // Make options.email.to an array if it is a string
+    if (typeof options.email.to === 'string') {
+        options.email.to = [options.email.to]
     }
 
-    // Make options.emailToOnFail an array if it is a string
-    if (typeof options.emailToOnFail === 'string') {
-        options.emailToOnFail = [options.emailToOnFail]
+    // Make options.email.toOnFail an array if it is a string
+    if (typeof options.email.toOnFail === 'string') {
+        options.email.toOnFail = [options.email.toOnFail]
     }
 
     validateOptions();
 }
 
+
+// defaultOptions and customOptions are nested objects
+// merge both of them and make sure that values that exist in customOptions overwrite values in defaultOptions
+function mergeOptions(defaultOptions, customOptions) {
+
+    // Clone defaultOptions
+    const mergedOptions = { ...defaultOptions }
+
+    // Loop through customOptions
+    for (const key in customOptions) {
+
+        // If the value of the key is an object, recursively call mergeOptions
+        if (typeof customOptions[key] === 'object' && customOptions[key] !== null) {
+            mergedOptions[key] = mergeOptions(mergedOptions[key], customOptions[key])
+        } else {
+            // If the value of the key is not an object, overwrite the value in mergedOptions
+            mergedOptions[key] = customOptions[key]
+        }
+    }
+
+    return mergedOptions
+}
+
 function validateOptions() {
 
-    validateEmails(options.emailFrom, true)
-    validateEmails(options.emailTo)
-    validateEmails(options.emailToOnFail, false, true)
+    validateEmails(options.email.from, true)
+    validateEmails(options.email.to)
+    validateEmails(options.email.toOnFail, false, true)
 
     // packageName must be string
     if (typeof options.packageName !== 'string') {
         throw new Error('Invalid packageName option: not a string')
     }
 
-    // emailOnSuccess must be boolean
-    if (typeof options.emailOnSuccess !== 'boolean') {
-        throw new Error('Invalid emailOnSuccess option: not a boolean')
+    // email.onSuccess must be boolean
+    if (typeof options.email.onSuccess !== 'boolean') {
+        throw new Error('Invalid email.onSuccess option: not a boolean')
     }
 
     // dry must be boolean
@@ -75,7 +97,7 @@ function validateOptions() {
 
 function validateEmails(emails, mustBeString = false, canBeEmpty = false) {
 
-    // If options.emailTo is empty and canBeEmpty is true, return
+    // If options.email.to is empty and canBeEmpty is true, return
     if (canBeEmpty && emails === "") {
         return
     }
@@ -87,7 +109,7 @@ function validateEmails(emails, mustBeString = false, canBeEmpty = false) {
         }
     }
 
-    // If options.emailTo is a string, check if it is a valid email address. If yes, return
+    // If options.email.to is a string, check if it is a valid email address. If yes, return
     if (typeof emails === 'string') {
         validateEmail(emails)
         return
@@ -97,7 +119,7 @@ function validateEmails(emails, mustBeString = false, canBeEmpty = false) {
     if (Array.isArray(emails)) {
 
         if (emails.length === 0) {
-            throw new Error('Missing required option emailTo')
+            throw new Error('Missing required option email.to')
         }
 
         // Remove duplicates
@@ -110,7 +132,7 @@ function validateEmails(emails, mustBeString = false, canBeEmpty = false) {
         return
     }
 
-    throw new Error('Invalid emailTo option: not a string or array')
+    throw new Error('Invalid email.to option: not a string or array')
 }
 
 const initSmtpTransport = () => {
@@ -170,6 +192,7 @@ function getProjectName() {
 }
 
 function getStatusEmoji(status) {
+
     // https://glebbahmutov.com/blog/cypress-test-statuses/
     const validStatuses = ['passed', 'failed', 'pending', 'skipped']
     if (!validStatuses.includes(status)) {
@@ -187,8 +210,6 @@ function getStatusEmoji(status) {
 
 function isEmail(email) {
 
-    // https://emailregex.com/
-
     let regex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 
     return regex.test(email)
@@ -196,7 +217,7 @@ function isEmail(email) {
 
 const initEmailSender = () => {
 
-    const emailSender = options.transport || initSmtpTransport()
+    const emailSender = options.email.transport || initSmtpTransport()
 
     if (!emailSender) {
         throw new Error('Could not initialize emailSender')
@@ -209,36 +230,6 @@ const initEmailSender = () => {
     return emailSender
 }
 
-function validateAndReturnEmail(emailInput) {
-
-    let emailTo = []
-
-    // If options.emailTo is a string, check if it is a valid email address and add it to emailTo array
-    if (typeof emailInput === 'string') {
-
-        if (!isEmail(emailInput)) {
-            throw new Error('Not a valid email address')
-        }
-
-        emailTo.push(emailInput)
-    }
-
-    // If emails is an array, check if all elements are valid email addresses and add them to emailTo array
-    if (Array.isArray(emailInput)) {
-
-        emailInput.forEach(email => {
-
-            if (!isEmail(email)) {
-                throw new Error('Not a valid email address')
-            }
-
-            emailTo.push(email)
-        })
-    }
-
-    return emailTo
-}
-
 function validateEmail(email) {
 
     if (!isEmail(email)) {
@@ -246,7 +237,7 @@ function validateEmail(email) {
     }
 }
 
-function customTrim(string){
+function customTrim(string) {
     // Remove any type of quotes and trim
     return string.replace(/['"]+/g, '').trim()
 }
@@ -305,50 +296,53 @@ function registerCypressReportResults(on, config) {
 
         const runStatus = totals.failed > 0 ? 'FAILED' : 'OK'
 
-        // If totals.failed > 0 add emails from options.emailToOnFail to emailTo array
-        if (totals.failed > 0 && options.emailToOnFail) {
-            options.emailTo.push(...options.emailToOnFail)
+        // If totals.failed > 0 add emails from options.email.toOnFail to email.to array
+        if (totals.failed > 0 && options.email.toOnFail) {
+            options.email.to.push(...options.email.toOnFail)
         }
 
         let hasRunToday = false
 
         if (totals.failed === 0) {
 
-            // successful run
-            if (!options.emailOnSuccess) {   
-                return
-            }
+            // // successful run
+            // if (!options.email.onSuccess) {
+            //     return
+            // }
 
-            // Find out what weekday it is. If it Saturday or Sunday, then don't send email
-            const day = new Date().getDay()
+            // // Find out what weekday it is. If it Saturday or Sunday, then don't send email
+            // if (process.env.NODE_ENV && process.env.NODE_ENV !== 'development') {
 
-            if (day === 0 || day === 6) {
-                console.log('Cypress email results: not sending 100% success email on weekend')
-                return
-            }
-    
-            if (process.env.LAST_RUN_DATE) {
+            //     const day = new Date().getDay()
 
-                // oldDate is a string in ISO 8601 format
-                // const inputDateTime = '2023-06-03T09:55:42Z'
+            //     if (day === 0 || day === 6) {
+            //         console.log('Cypress email results: not sending 100% success email on weekend')
+            //         return
+            //     }
+            // }
 
-                // get the current date
-                const today = new Date()
+            // if (process.env.LAST_RUN_DATE) {
 
-                // if inputDateTime is not on the same date as today, then set result to false, otherwise true
-                hasRunToday = customTrim(process.env.LAST_RUN_DATE).substring(0, 10) === today.toISOString().substring(0, 10)
-            }
+            //     // oldDate is a string in ISO 8601 format
+            //     // const inputDateTime = '2023-06-03T09:55:42Z'
 
-            // If hasRunToday is true, then don't send email
-            if (hasRunToday) {
-                console.log('Cypress email results: already sent 100% success email today')
-                return
-            }
+            //     // get the current date
+            //     const today = new Date()
+
+            //     // if inputDateTime is not on the same date as today, then set result to false, otherwise true
+            //     hasRunToday = customTrim(process.env.LAST_RUN_DATE).substring(0, 10) === today.toISOString().substring(0, 10)
+            // }
+
+            // // If hasRunToday is true, then don't send email
+            // if (hasRunToday) {
+            //     console.log('Cypress email results: already sent 100% success email today')
+            //     return
+            // }
         }
 
         console.log(
             'Cypress email results: sending results to %d email users',
-            options.emailTo.length,
+            options.email.to.length,
         )
 
         const n = Object.keys(allResults).length
@@ -409,8 +403,8 @@ function registerCypressReportResults(on, config) {
         }
 
         const emailOptions = {
-            from: options.emailFrom,
-            to: options.emailTo,
+            from: options.email.from,
+            to: options.email.to,
             subject,
             text,
         }
