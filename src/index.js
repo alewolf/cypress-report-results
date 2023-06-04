@@ -306,7 +306,7 @@ function registerCypressReportResults(on, config) {
         }
 
         let hasRunToday = false
-        
+
         if (totals.failed === 0) {
 
             // successful run
@@ -380,7 +380,7 @@ function registerCypressReportResults(on, config) {
         }
 
         // Add hasRunToday to text
-        if (hasRunToday) {
+        if (process.env.LAST_RUN_DATE) {
             text += '\n\n\n' + `Has run today: ${hasRunToday}`
         }
 
