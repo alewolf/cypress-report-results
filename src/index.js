@@ -52,23 +52,66 @@ const loadOptions = () => {
 
 
 // defaultOptions and customOptions are nested objects
-// merge both of them and make sure that values that exist in customOptions overwrite values in defaultOptions
+// go through it recursively
+// if a key is missing in customOptions, use the key and value from defaultOptions
 function mergeOptions(defaultOptions, customOptions) {
 
-    // Clone defaultOptions
-    const mergedOptions = { ...defaultOptions }
-
-    // Loop through customOptions
-    for (const key in customOptions) {
-
-        // If the value of the key is an object, recursively call mergeOptions
-        if (typeof customOptions[key] === 'object' && customOptions[key] !== null) {
-            mergedOptions[key] = mergeOptions(mergedOptions[key], customOptions[key])
-        } else {
-            // If the value of the key is not an object, overwrite the value in mergedOptions
-            mergedOptions[key] = customOptions[key]
-        }
+    // If customOptions is undefined, return defaultOptions
+    if (!customOptions) {
+        return defaultOptions
     }
+
+    // If customOptions is not an object, throw error
+    if (typeof customOptions !== 'object') {
+        throw new Error('Invalid customOptions: not an object')
+    }
+
+    // If defaultOptions is not an object, throw error
+    if (typeof defaultOptions !== 'object') {
+        throw new Error('Invalid defaultOptions: not an object')
+    }
+
+    // If customOptions is an array, throw error
+    if (Array.isArray(customOptions)) {
+        throw new Error('Invalid customOptions: not an object')
+    }
+
+    // If defaultOptions is an array, throw error
+    if (Array.isArray(defaultOptions)) {
+        throw new Error('Invalid defaultOptions: not an object')
+    }
+
+    // If customOptions is an empty object, return defaultOptions
+    if (Object.keys(customOptions).length === 0) {
+        return defaultOptions
+    }
+
+    // If defaultOptions is an empty object, return customOptions
+    if (Object.keys(defaultOptions).length === 0) {
+        return customOptions
+    }
+
+    // If customOptions is an object and defaultOptions is an object, merge them
+    const mergedOptions = {}
+
+    // Loop through defaultOptions
+    Object.keys(defaultOptions).forEach(key => {
+
+        // If customOptions[key] is undefined, use defaultOptions[key]
+        if (typeof customOptions[key] === 'undefined') {
+            mergedOptions[key] = defaultOptions[key]
+            return
+        }
+
+        // If customOptions[key] is an object and defaultOptions[key] is an object, merge them
+        if (typeof customOptions[key] === 'object' && typeof defaultOptions[key] === 'object') {
+            mergedOptions[key] = mergeOptions(defaultOptions[key], customOptions[key])
+            return
+        }
+
+        // If customOptions[key] is not undefined, use customOptions[key]
+        mergedOptions[key] = customOptions[key]
+    })
 
     return mergedOptions
 }
@@ -132,7 +175,7 @@ function validateEmails(emails, mustBeString = false, canBeEmpty = false) {
         return
     }
 
-    throw new Error('Invalid email.to option: not a string or array')
+    throw new Error(`Invalid email.to option: not a string or array: ${JSON.stringify(emails)}`)
 }
 
 const initSmtpTransport = () => {
