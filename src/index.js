@@ -329,7 +329,7 @@ function registerCypressReportResults(on, config) {
                 const today = new Date()
 
                 // if inputDateTime is not on the same date as today, then set result to false, otherwise true
-                hasRunToday = process.env.LAST_RUN_DATE.customTrim().substring(0, 10) === today.toISOString().substring(0, 10)
+                hasRunToday = customTrim(process.env.LAST_RUN_DATE).substring(0, 10) === today.toISOString().substring(0, 10)
             }
 
             // If hasRunToday is true, then don't send email
@@ -393,7 +393,7 @@ function registerCypressReportResults(on, config) {
             text += '\n\n\n' + `Today's date: ${today.toISOString().substring(0, 10)}`
 
             // add process.env.LAST_RUN_DATE date to string
-            text += '\n\n\n' + `process.env.LAST_RUN_DATE: ${process.env.LAST_RUN_DATE.customTrim().substring(0, 10)}`
+            text += '\n\n\n' + `process.env.LAST_RUN_DATE: ${customTrim(process.env.LAST_RUN_DATE).substring(0, 10)}`
 
 
         }
