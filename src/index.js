@@ -382,6 +382,15 @@ function registerCypressReportResults(on, config) {
         // Add hasRunToday to text
         if (process.env.LAST_RUN_DATE) {
             text += '\n\n\n' + `Has run today: ${hasRunToday}`
+
+            // add today's date to string
+            const today = new Date()
+            text += '\n\n\n' + `Today's date: ${today.toISOString().substring(0, 10)}`
+
+            // add process.env.LAST_RUN_DATE date to string
+            text += '\n\n\n' + `process.env.LAST_RUN_DATE: ${process.env.LAST_RUN_DATE.substring(0, 10)}`
+
+
         }
 
         if (ci.isCI && ci.name) {
