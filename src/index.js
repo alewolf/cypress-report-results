@@ -424,21 +424,21 @@ function registerCypressReportResults(on, config) {
         let text = textStart + '\n\n' + dashboard + '\n\n' + testResults
 
         // Add process.env.LAST_RUN_DATE to text
-        if (process.env.LAST_RUN_DATE) {
-            text += '\n\n\n' + `Last run date: ${process.env.LAST_RUN_DATE}`
-        }
+        // if (process.env.LAST_RUN_DATE) {
+        //     text += '\n\n\n' + `Last run date: ${process.env.LAST_RUN_DATE}`
+        // }
 
         // Add hasRunToday to text
-        if (process.env.LAST_RUN_DATE) {
-            text += '\n\n\n' + `Has run today: ${hasRunToday}`
+        // if (process.env.LAST_RUN_DATE) {
+        //     text += '\n\n\n' + `Has run today: ${hasRunToday}`
 
-            // add today's date to string
-            const today = new Date()
-            text += '\n\n\n' + `Today's date: ${today.toISOString().substring(0, 10)}`
+        //     // add today's date to string
+        //     const today = new Date()
+        //     text += '\n\n\n' + `Today's date: ${today.toISOString().substring(0, 10)}`
 
-            // add process.env.LAST_RUN_DATE date to string
-            text += '\n\n\n' + `process.env.LAST_RUN_DATE: ${customTrim(process.env.LAST_RUN_DATE).substring(0, 10)}`
-        }
+        //     // add process.env.LAST_RUN_DATE date to string
+        //     text += '\n\n\n' + `process.env.LAST_RUN_DATE: ${customTrim(process.env.LAST_RUN_DATE).substring(0, 10)}`
+        // }
 
         if (ci.isCI && ci.name) {
             text +=
