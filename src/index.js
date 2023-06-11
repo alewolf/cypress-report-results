@@ -354,7 +354,11 @@ function registerCypressReportResults(on, config) {
             }
 
             // Find out what weekday it is. If it Saturday or Sunday, then don't send email
-            if (process.env.NODE_ENV && process.env.NODE_ENV !== 'development') {
+            // Only do this if NODE_ENV is not set to development
+            if (
+                !process.env.NODE_ENV
+                || process.env.NODE_ENV !== 'development'
+            ) {
 
                 const day = new Date().getDay()
 
