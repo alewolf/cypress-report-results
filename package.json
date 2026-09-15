@@ -25,6 +25,6 @@
     "ci-info": "^3.8.0",
     "common-tags": "^1.8.2",
     "humanize-duration": "^3.28.0",
-    "nodemailer": "^9.0.3"
+    "nodemailer": "^9.1.1"
   }
 }
