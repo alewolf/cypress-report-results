@@ -22,9 +22,9 @@
   },
   "homepage": "https://github.com/alewolf/cypress-report-results#readme",
   "dependencies": {
-    "ci-info": "^3.8.0",
+    "ci-info": "^4.4.0",
     "common-tags": "^1.8.2",
-    "humanize-duration": "^3.28.0",
+    "humanize-duration": "^3.35.0",
     "nodemailer": "^9.1.1"
   }
 }
