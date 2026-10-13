@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "description": "A Cypress plugin to report the results",
   "main": "src",
+  "files": [
+    "src"
+  ],
   "scripts": {
     "test": "cypress run"
   },
