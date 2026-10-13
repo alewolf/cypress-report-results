@@ -21,6 +21,9 @@
     "url": "https://github.com/alewolf/cypress-report-results/issues"
   },
   "homepage": "https://github.com/alewolf/cypress-report-results#readme",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "ci-info": "^4.4.0",
     "common-tags": "^1.8.2",
